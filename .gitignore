@@ -1,0 +1,25 @@
+# Dependencies - Ignore installed packages.
+node_modules/
+.env
+
+# Ignore environment variable files.
+.env
+.env.*
+
+# Ignore compiled/build output.
+dist/
+build/
+
+# Ignore log files.
+*.log
+
+# Ignore test coverage reports.
+coverage/
+
+# Ignore editor-specific settings.
+.vscode/
+.idea/
+
+# Ignore operating system files.
+.DS_Store
+Thumbs.db

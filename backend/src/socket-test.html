@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Socket.IO Test</title>
+</head>
+<body>
+    <h2>Socket.IO Test</h2>
+
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+
+    <script>
+        const socket = io("http://127.0.0.1:5050");
+        socket.on("connect", () => {
+            console.log("Connected:", socket.id);
+        });
+
+        socket.on("vehicleCreated", (data) => {
+            console.log("Vehicle Created:", data);
+        });
+
+        socket.on("vehicleUpdated", (data) => {
+            console.log("Vehicle Updated:", data);
+        });
+
+        socket.on("vehicleDeleted", (data) => {
+            console.log("Vehicle Deleted:", data);
+        });
+    </script>
+</body>
+</html>
