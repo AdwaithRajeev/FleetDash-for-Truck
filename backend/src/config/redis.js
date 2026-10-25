@@ -1,82 +1,51 @@
+
 const Redis = require("ioredis");
 
-// ============================================================
-// REDIS CLIENT
-// ============================================================
-
-const redisClient = new Redis(
-  process.env.REDIS_URL || "redis://127.0.0.1:6379",
-  {
-    lazyConnect: true,
-    maxRetriesPerRequest: null,
-  }
-);
-
-// ============================================================
-// REDIS EVENTS
-// ============================================================
-
-redisClient.on("connect", () => {
-  console.log("Redis Connected Successfully");
-});
-
-redisClient.on("ready", () => {
-  console.log("Redis Ready");
-});
-
-redisClient.on("error", (error) => {
-  console.error(
-    "Redis Error:",
-    error.message
-  );
-});
-
-redisClient.on("close", () => {
-  console.log("Redis Connection Closed");
-});
-
-// ============================================================
-// CONNECT REDIS
-// ============================================================
+// Redis is optional when REDIS_URL is not configured.
+let redisClient = null;
 
 const connectRedis = async () => {
+  if (!process.env.REDIS_URL) {
+    console.log("Redis disabled: REDIS_URL is not configured.");
+    return;
+  }
+
+  if (redisClient?.status === "ready" || redisClient?.status === "connecting") {
+    return;
+  }
+
+  if (!redisClient) {
+    redisClient = new Redis(process.env.REDIS_URL, {
+      lazyConnect: true,
+      maxRetriesPerRequest: null,
+      retryStrategy(times) {
+        return times <= 3 ? 1000 * times : null;
+      },
+    });
+
+    redisClient.on("connect", () => {
+      console.log("Redis connected successfully.");
+    });
+
+    redisClient.on("error", (error) => {
+      console.error("Redis error:", error.message);
+    });
+
+    redisClient.on("close", () => {
+      console.log("Redis connection closed.");
+    });
+  }
+
   try {
-    if (
-      redisClient.status === "ready" ||
-      redisClient.status === "connecting"
-    ) {
-      return;
-    }
-
     await redisClient.connect();
-
-    console.log(
-      "Redis Connected Successfully"
-    );
   } catch (error) {
-    // ioredis may report this if another connection
-    // attempt has already started.
-    if (
-      !error.message.includes(
-        "already connecting"
-      ) &&
-      !error.message.includes(
-        "already connected"
-      )
-    ) {
-      console.error(
-        "Redis Connection Failed:",
-        error.message
-      );
-    }
+    console.error("Redis connection failed:", error.message);
   }
 };
 
-// ============================================================
-// EXPORTS
-// ============================================================
-
 module.exports = {
-  redisClient,
+  get redisClient() {
+    return redisClient;
+  },
   connectRedis,
 };

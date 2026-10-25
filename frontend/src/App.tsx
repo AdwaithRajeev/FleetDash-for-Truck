@@ -7,7 +7,7 @@ import VehicleList from './components/VehicleList';
 import './styles/dashboard.css';
 import MapPlaceholder from './components/MapPlaceholder';
 import Register from './pages/Register';
-
+import API_BASE_URL from './config/api';
 
 
 const App: React.FC = () => {
@@ -26,8 +26,7 @@ const [password, setPassword] = useState('');
 const [loginError, setLoginError] = useState('');
 const [isLoading, setIsLoading] = useState(false);
     useEffect(() => {
-  fetch('http://localhost:5050/vehicles')
-    .then((res) => res.json())
+fetch(`${API_BASE_URL}/vehicles`)    .then((res) => res.json())
     .then((result) => {
       setVehicles(result.data || []);
     })
@@ -47,9 +46,6 @@ const [isLoading, setIsLoading] = useState(false);
 if (!isLoggedIn && showRegister) {
   return (
     <Register
-      onRegisterSuccess={() => {
-        setShowRegister(false);
-      }}
       onLogin={() => {
         setShowRegister(false);
       }}
@@ -99,7 +95,7 @@ if (!isLoggedIn) {
 
     try {
       const response = await fetch(
-        'http://localhost:5050/api/users/login',
+        `${API_BASE_URL}/api/users/login`,
         {
           method: 'POST',
           headers: {

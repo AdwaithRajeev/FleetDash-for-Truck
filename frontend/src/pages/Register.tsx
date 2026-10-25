@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
+import API_BASE_URL from '../config/api';
 
 interface RegisterProps {
-  onRegisterSuccess: () => void;
   onLogin: () => void;
 }
 
 const Register: React.FC<RegisterProps> = ({
-  onRegisterSuccess,
   onLogin,
 }) => {
   const [name, setName] = useState('');
@@ -40,7 +39,7 @@ const Register: React.FC<RegisterProps> = ({
 
     try {
       const response = await fetch(
-        'http://localhost:5050/api/users/register',
+        `${API_BASE_URL}/api/users/register`,
         {
           method: 'POST',
           headers: {

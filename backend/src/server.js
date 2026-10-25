@@ -40,15 +40,15 @@ const server =
 // SOCKET.IO
 // ============================================================
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
-    methods: [
-      "GET",
-      "POST",
-      "PUT",
-      "DELETE",
-    ],
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   },
 });
@@ -126,118 +126,62 @@ const broadcastVehicles =
 // REDIS PUB/SUB
 // ============================================================
 
-const setupRedisSubscriptions =
-  async () => {
-    try {
-      await connectRedis();
 
+const setupRedisSubscriptions = async () => {
+  try {
+    await connectRedis();
+
+    // Redis is optional when REDIS_URL is not configured.
+    if (!redisClient) {
       console.log(
-        "Redis Pub/Sub subscriptions ready"
+        "Redis Pub/Sub disabled: REDIS_URL is not configured."
       );
+      return;
+    }
 
-      /*
-       * ioredis requires a separate connection
-       * for subscriptions.
-       */
-      const subscriber =
-        redisClient.duplicate();
+    const subscriber = redisClient.duplicate();
 
-      subscriber.on(
-        "error",
-        (error) => {
-          console.error(
-            "Redis Subscriber Error:",
-            error.message
-          );
-        }
-      );
-
-      await subscriber.subscribe(
-        "vehicle:update"
-      );
-
-      await subscriber.subscribe(
-        "vehicles:update"
-      );
-
-      await subscriber.subscribe(
-        "alert:new"
-      );
-
-      subscriber.on(
-        "message",
-        (channel, message) => {
-          try {
-            const data =
-              JSON.parse(message);
-
-            // ------------------------------------------------
-            // SINGLE VEHICLE UPDATE
-            // ------------------------------------------------
-
-            if (
-              channel ===
-              "vehicle:update"
-            ) {
-              io.emit(
-                "vehicle:update",
-                data
-              );
-
-              console.log(
-                `Redis → vehicle:update → ${data.vehicleId}`
-              );
-            }
-
-            // ------------------------------------------------
-            // ALL VEHICLES UPDATE
-            // ------------------------------------------------
-
-            else if (
-              channel ===
-              "vehicles:update"
-            ) {
-              io.emit(
-                "vehicles:update",
-                data
-              );
-
-              console.log(
-                `Redis → vehicles:update → ${data.length} vehicles`
-              );
-            }
-
-            // ------------------------------------------------
-            // ALERT
-            // ------------------------------------------------
-
-            else if (
-              channel === "alert:new"
-            ) {
-              io.emit(
-                "alert:new",
-                data
-              );
-
-              console.log(
-                "Redis → alert:new"
-              );
-            }
-          } catch (error) {
-            console.error(
-              "Redis message parsing error:",
-              error.message
-            );
-          }
-        }
-      );
-    } catch (error) {
+    subscriber.on("error", (error) => {
       console.error(
-        "Redis subscription setup failed:",
+        "Redis Subscriber Error:",
         error.message
       );
-    }
-  };
+    });
+
+    await subscriber.subscribe(
+      "vehicle:update",
+      "vehicles:update",
+      "alert:new"
+    );
+
+    subscriber.on("message", (channel, message) => {
+      try {
+        const data = JSON.parse(message);
+
+        if (channel === "vehicle:update") {
+          io.emit("vehicle:update", data);
+        } else if (channel === "vehicles:update") {
+          io.emit("vehicles:update", data);
+        } else if (channel === "alert:new") {
+          io.emit("alert:new", data);
+        }
+      } catch (error) {
+        console.error(
+          "Redis message parsing error:",
+          error.message
+        );
+      }
+    });
+
+    console.log("Redis Pub/Sub subscriptions ready");
+  } catch (error) {
+    console.error(
+      "Redis subscription setup failed:",
+      error.message
+    );
+  }
+};
+
 
 // ============================================================
 // START SERVER
@@ -334,13 +278,15 @@ const shutdown =
     // --------------------------------------------------------
 
     try {
-      if (
-        redisClient.status === "ready" ||
-        redisClient.status ===
-          "connecting"
-      ) {
-        await redisClient.quit();
-      }
+if (
+  redisClient &&
+  (
+    redisClient.status === "ready" ||
+    redisClient.status === "connecting"
+  )
+) {
+  await redisClient.quit();
+}
     } catch (error) {
       console.error(
         "Redis shutdown error:",

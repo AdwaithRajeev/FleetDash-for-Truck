@@ -51,7 +51,6 @@ const Header: React.FC<HeaderProps> = ({
   subtitle = 'Real-time fleet monitoring & analytics',
   searchQuery = '',
   onSearchChange = () => {},
-  onLogout = () => {},
   onRefresh = () => {},
   alertCount = 0,
 }) => {
@@ -73,9 +72,6 @@ const handleLogout = (): void => {
   window.location.reload();
 };
 
-const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-  onSearchChange(e.target.value);
-};
 
  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
   if (e.key === 'Escape') {
